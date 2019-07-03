@@ -1,8 +1,6 @@
 import requests
 import re
 import os
-import time
-from hashlib import md5
 
 
 def get_one_page(url,headers):
@@ -23,8 +21,20 @@ def parse_one_page(html):
 
 def parse_names(html):
 	pattern2 = re.compile('.*?class="issue-item_title".*?href=.*?>(.*?)<span', re.S)
-	pdfnames = re.findall(pattern2, html)
+	pattern3 = re.compile('.*?class="single_highlight_class">(.*?)</span>.*?</a></h5><h4>', re.S)
+	pattern4 = re.compile('.*?class="issue-item_title".*?class="single_highlight_class".*?</span>(.*?)</a></h5><h4></h4></span><ul.class="issue-item_loa"', re.S)
+	pdfnames2 = re.findall(pattern2, html)
+	pdfnames3 = re.findall(pattern3, html)
+	pdfnames4 = re.findall(pattern4, html)
+	pdfnames = []
+	for i in range(len(pdfnames2)):
+		a = pdfnames2[i] + pdfnames3[i] + pdfnames4[i]
+		pdfnames.append(a)
 	return pdfnames
+	
+#   PQuery can do like this:
+#   wrap.find('p').remove() 
+#   print(wrap.text())
 
 
 def save_pdf(result, big_path, pdfnames):
@@ -63,3 +73,5 @@ if __name__ == '__main__':
 	kw = 'BODIPY'
 	kw = input ('Key Word: ')
 	main(kw)
+	
+
