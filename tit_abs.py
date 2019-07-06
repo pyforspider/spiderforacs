@@ -46,20 +46,33 @@ def get_abstract_pic(html):
 	return abstract_gif_url
 
 
+def str_symbol_out(string):
+	"""This fun is aimed to seperate symbol out from a string.
+
+	Another way from Internet:
+	import re
+	def validateTitle(string):
+		rstr = r"[\/\\\:\*\?\"\<\>\|]"
+		new_string = re.sub(rstr, "_", title)
+		return new_string
+	"""
+
+	string_str_lis = list(string)
+	number = 0
+	for char in string_str_lis:
+		if char in ['<', '>', '/', '\\', '|', ':', '"', '*', '?']:
+			string_str_lis.pop(number)
+		number += 1
+	string_normal = ''.join(string_str_lis)
+	return string_normal
+
+
 def write_to_docx(doc, path, title, abstract, abstract_gif_url):
 	try:
 		doc.add_heading(title)
 		doc.add_paragraph("Abstract:")
 		doc.add_paragraph(abstract)
-
-		title_str_lis = list(title)
-		number = 0
-		for char in title_str_lis:
-			if char in ['<', '>', '/', '\\', '|', ':', '"', '*', '?']:
-				title_str_lis.pop(number)
-			number += 1
-		title_normal = ''.join(title_str_lis)
-
+		title_normal = str_symbol_out(title)
 		pic_name = path + title_normal + ".gif"
 		with open(pic_name, 'wb') as f:
 			r = requests.get(abstract_gif_url)

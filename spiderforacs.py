@@ -52,7 +52,7 @@ def save_pdf(pdf_intact_links, big_path, pdf_names, i):
 			print("Acquiring PDF file: " + pdf_names[count][0:60] + '...' + ".pdf")
 			r = requests.get(pdf_intact_link)
 			file_path = big_path + os.path.sep + '{file_name}.{file_suffix}'.format(
-				file_name=str(count+i*20) + ' ' + pdf_names[count],
+				file_name=str(count+i*20+1) + ' ' + pdf_names[count],
 				file_suffix='pdf')
 			with open(file_path, 'wb') as f:
 				f.write(r.content)
