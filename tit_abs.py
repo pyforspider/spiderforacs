@@ -3,6 +3,7 @@ import re
 import os
 from docx import Document
 from docx.shared import Inches
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from requests.exceptions import RequestException
 from lxml import etree
 
@@ -40,10 +41,14 @@ def get_abstract_text(html):
 
 
 def get_abstract_pic(html):
-	pattern = re.compile('article_abstract-img.*?src="(.*?)"', re.S)
-	abstract_gif_broken_url = re.findall(pattern, html)[0]
-	abstract_gif_url = "https://pubs.acs.org" + abstract_gif_broken_url
-	return abstract_gif_url
+	try:
+		pattern = re.compile('article_abstract-img.*?src="(.*?)"', re.S)
+		abstract_gif_broken_url = re.findall(pattern, html)[0]
+		abstract_gif_url = "https://pubs.acs.org" + abstract_gif_broken_url
+		return abstract_gif_url
+	except:
+		print("This article has no abstract picture.")
+		return False
 
 
 def str_symbol_out(string):
@@ -70,15 +75,22 @@ def str_symbol_out(string):
 def write_to_docx(doc, path, title, abstract, abstract_gif_url):
 	try:
 		doc.add_heading(title)
-		doc.add_paragraph("Abstract:")
-		doc.add_paragraph(abstract)
+		doc.add_heading("Abstract:", level=1)
+
+		# doc.styles['Normal'].font.name = "Times New Roman"
+		paragraph = doc.add_paragraph(abstract)
+		paragraph_format = paragraph.paragraph_format
+		paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+
+		doc.add_heading("Abstract picture:", level=1)
 		title_normal = str_symbol_out(title)
 		pic_name = path + title_normal + ".gif"
-		with open(pic_name, 'wb') as f:
-			r = requests.get(abstract_gif_url)
-			f.write(r.content)
-		doc.add_picture(pic_name, width=Inches(5.0))
-		doc.add_paragraph("\n\n\n")
+		if abstract_gif_url:
+			with open(pic_name, 'wb') as f:
+				r = requests.get(abstract_gif_url)
+				f.write(r.content)
+			doc.add_picture(pic_name, width=Inches(5.0))
+		doc.add_page_break()
 		doc.save('Title & Abstract.docx')
 		print('Success to save info: ' + title[:50] + "...")
 	except:
