@@ -34,6 +34,7 @@ def parser_names(html):
 		pdf_name_splits = h5.xpath('.//text()')
 		for split in pdf_name_splits:
 			pdf_name += split
+			
 		pdfname_str_lis = list(pdf_name)
 		number = 0
 		for char in pdfname_str_lis:
