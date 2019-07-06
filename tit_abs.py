@@ -2,7 +2,9 @@ import requests
 import re
 import os
 from docx import Document
+from docx.shared import Inches
 from requests.exceptions import RequestException
+from lxml import etree
 
 
 def get_html_text(url, headers):
@@ -32,8 +34,8 @@ def get_title(html):
 
 
 def get_abstract_text(html):
-	pattern = re.compile('content="(.*?)"', re.S)
-	abstract_text = re.findall(pattern, html)[8]
+	selector = etree.HTML(html)
+	abstract_text = selector.xpath('//meta[@name="dc.Description"]/@content')[0]
 	return abstract_text
 
 
@@ -46,19 +48,28 @@ def get_abstract_pic(html):
 
 def write_to_docx(doc, path, title, abstract, abstract_gif_url):
 	try:
-		doc.add_paragraph("Title:")
-		doc.add_paragraph(title)
+		doc.add_heading(title)
 		doc.add_paragraph("Abstract:")
 		doc.add_paragraph(abstract)
-		pic_name = path + title + ".gif"
+
+		title_str_lis = list(title)
+		number = 0
+		for char in title_str_lis:
+			if char in ['<', '>', '/', '\\', '|', ':', '"', '*', '?']:
+				title_str_lis.pop(number)
+			number += 1
+		title_normal = ''.join(title_str_lis)
+
+		pic_name = path + title_normal + ".gif"
 		with open(pic_name, 'wb') as f:
 			r = requests.get(abstract_gif_url)
 			f.write(r.content)
-		doc.add_picture(pic_name)
+		doc.add_picture(pic_name, width=Inches(5.0))
 		doc.add_paragraph("\n\n\n")
 		doc.save('Title & Abstract.docx')
+		print('Success to save info: ' + title[:50] + "...")
 	except:
-		print("Fail to save this to docx.")
+		print("Fail to write info to text.")
 
 
 def main(kw):
@@ -67,6 +78,7 @@ def main(kw):
 	html = get_html_text(url, headers)
 	lit_links = parser_lit_links(html)
 	doc = Document()
+	doc.save('Title & Abstract.docx')
 	path = "pics for Literature " + kw + os.path.sep
 	if not os.path.exists(path):
 		os.makedirs(path)
@@ -76,10 +88,9 @@ def main(kw):
 		abstract = get_abstract_text(lit_html)
 		abstract_gif_url = get_abstract_pic(lit_html)
 		write_to_docx(doc, path, title, abstract, abstract_gif_url)
-		print('success' + lit_link)
+	print("Success to generate a report on " + kw + ".")
 
 
 if __name__ == '__main__':
 	keyword = input("Input keyword: ")
 	main(keyword)
-
