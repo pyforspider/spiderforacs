@@ -1,11 +1,8 @@
-#!/user/bin/env python
-# -*- coding:utf-8 -*-
-
 import requests
 import re
 import os
-from mailmerge import MailMerge
 from docx import Document
+from requests.exceptions import RequestException
 
 
 def get_html_text(url, headers):
@@ -14,8 +11,18 @@ def get_html_text(url, headers):
 		r.raise_for_status()
 		r.encoding = r.apparent_encoding
 		return r.text
-	except:
+	except RequestException:
 		print('Fail to get html text.')
+
+
+def parser_lit_links(html):
+	pattern = re.compile('.*?class="issue-item_title".*?href="(.*?)">', re.S)
+	lit_brok_links = re.findall(pattern, html)
+	lit_links = []
+	for lit_brok_link in lit_brok_links:
+		lit_link = 'https://pubs.acs.org' + lit_brok_link
+		lit_links.append(lit_link)
+	return lit_links
 
 
 def get_title(html):
@@ -37,27 +44,42 @@ def get_abstract_pic(html):
 	return abstract_gif_url
 
 
-def write_to_docx(title, abstract, pic):
-	doc = Document()
-	doc.add_paragraph(title)
-	doc.add_paragraph(abstract)
-	with open('pic.gif', 'wb') as f:
-		r = requests.get(pic)
-		f.write(r.content)
-	doc.add_picture('pic.gif')
-	doc.save('Title & Abstract.docx')
+def write_to_docx(doc, path, title, abstract, abstract_gif_url):
+	try:
+		doc.add_paragraph("Title:")
+		doc.add_paragraph(title)
+		doc.add_paragraph("Abstract:")
+		doc.add_paragraph(abstract)
+		pic_name = path + title + ".gif"
+		with open(pic_name, 'wb') as f:
+			r = requests.get(abstract_gif_url)
+			f.write(r.content)
+		doc.add_picture(pic_name)
+		doc.add_paragraph("\n\n\n")
+		doc.save('Title & Abstract.docx')
+	except:
+		print("Fail to save this to docx.")
 
 
-def main():
-	url = 'https://pubs.acs.org/doi/10.1021/acsmedchemlett.5b00041'
+def main(kw):
+	url = "https://pubs.acs.org/action/doSearch?AllField=" + kw
 	headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36'}
 	html = get_html_text(url, headers)
-	title = get_title(html)
-	abstract = get_abstract_text(html)
-	abstract_gif_url = get_abstract_pic(html)
-	write_to_docx(title, abstract, abstract_gif_url)
+	lit_links = parser_lit_links(html)
+	doc = Document()
+	path = "pics for Literature " + kw + os.path.sep
+	if not os.path.exists(path):
+		os.makedirs(path)
+	for lit_link in lit_links:
+		lit_html = get_html_text(lit_link, headers=headers)
+		title = get_title(lit_html)
+		abstract = get_abstract_text(lit_html)
+		abstract_gif_url = get_abstract_pic(lit_html)
+		write_to_docx(doc, path, title, abstract, abstract_gif_url)
+		print('success' + lit_link)
 
 
 if __name__ == '__main__':
-	main()
+	keyword = input("Input keyword: ")
+	main(keyword)
 
